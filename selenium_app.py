@@ -4,6 +4,8 @@ import base64
 import json
 import threading
 import urllib.parse
+import subprocess
+import shutil
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify, Response, session
 from flask_cors import CORS
@@ -26,6 +28,28 @@ SESSION_TIMEOUT = 1800
 # Store browser sessions
 browser_sessions = {}
 session_last_used = {}
+
+# Install chromedriver if running on Render
+if os.environ.get('RENDER'):
+    try:
+        print("Setting up ChromeDriver for Render environment...")
+        # Download ChromeDriver
+        subprocess.run([
+            "wget", "-q", "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip"
+        ], check=True)
+        
+        # Unzip ChromeDriver
+        subprocess.run(["unzip", "-q", "chromedriver_linux64.zip"], check=True)
+        
+        # Make it executable
+        subprocess.run(["chmod", "+x", "chromedriver"], check=True)
+        
+        # Move to a directory in PATH
+        os.environ["CHROMEDRIVER_PATH"] = os.path.join(os.getcwd(), "chromedriver")
+        
+        print(f"ChromeDriver set up at: {os.environ['CHROMEDRIVER_PATH']}")
+    except Exception as e:
+        print(f"Error setting up ChromeDriver: {str(e)}")
 
 def cleanup_old_sessions():
     """Periodically clean up old browser sessions to free resources"""
@@ -72,29 +96,39 @@ def get_browser_for_session():
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--single-process")
         chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--disable-setuid-sandbox")
+        chrome_options.add_argument("--disable-software-rasterizer")
         
         try:
             # Check if we're running on Render
             if os.environ.get('RENDER'):
-                # Use pre-installed Chrome and ChromeDriver on Render
-                chrome_driver_path = os.environ.get('SELENIUM_DRIVER_EXECUTABLE_PATH', '/usr/bin/chromedriver')
+                # Use our downloaded ChromeDriver
+                chrome_driver_path = os.environ.get('CHROMEDRIVER_PATH', os.path.join(os.getcwd(), "chromedriver"))
+                print(f"Using ChromeDriver at: {chrome_driver_path}")
+                
+                if not os.path.exists(chrome_driver_path):
+                    raise Exception(f"ChromeDriver not found at {chrome_driver_path}")
+                
                 service = Service(executable_path=chrome_driver_path)
+                browser = webdriver.Chrome(service=service, options=chrome_options)
             else:
                 # For local development, use webdriver_manager
                 from webdriver_manager.chrome import ChromeDriverManager
                 service = Service(ChromeDriverManager().install())
-                
-            browser = webdriver.Chrome(service=service, options=chrome_options)
+                browser = webdriver.Chrome(service=service, options=chrome_options)
+            
             browser_sessions[session_id] = browser
+            print("Chrome browser instance created successfully")
         except Exception as e:
             print(f"Error initializing Chrome: {str(e)}")
-            # Fallback to a simpler configuration
+            # Try method without service object
             try:
+                print("Trying alternative Chrome initialization...")
                 browser = webdriver.Chrome(options=chrome_options)
                 browser_sessions[session_id] = browser
+                print("Alternative initialization succeeded")
             except Exception as e2:
-                print(f"Fallback initialization also failed: {str(e2)}")
+                print(f"All initialization methods failed: {str(e2)}")
                 raise
     
     # Update last used time

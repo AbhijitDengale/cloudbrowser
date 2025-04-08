@@ -13,15 +13,18 @@ services:
   - type: web
     name: enhanced-cloud-browser
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      apt-get -y update
+      apt-get -y install wget unzip
+      pip install -r requirements.txt
     startCommand: gunicorn selenium_app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
       - key: PYTHONUNBUFFERED
         value: "true"
-      - key: SELENIUM_DRIVER_EXECUTABLE_PATH
-        value: "/usr/bin/chromedriver"
+      - key: RENDER
+        value: "true"
       - key: DISPLAY
         value: ":99"
     plan: standard
