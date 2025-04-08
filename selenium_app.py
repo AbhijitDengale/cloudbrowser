@@ -10,7 +10,6 @@ from flask_cors import CORS
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -70,12 +69,33 @@ def get_browser_for_session():
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--single-process")
         chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--remote-debugging-port=9222")
         
-        # Initialize browser
-        service = Service(ChromeDriverManager().install())
-        browser = webdriver.Chrome(service=service, options=chrome_options)
-        browser_sessions[session_id] = browser
+        try:
+            # Check if we're running on Render
+            if os.environ.get('RENDER'):
+                # Use pre-installed Chrome and ChromeDriver on Render
+                chrome_driver_path = os.environ.get('SELENIUM_DRIVER_EXECUTABLE_PATH', '/usr/bin/chromedriver')
+                service = Service(executable_path=chrome_driver_path)
+            else:
+                # For local development, use webdriver_manager
+                from webdriver_manager.chrome import ChromeDriverManager
+                service = Service(ChromeDriverManager().install())
+                
+            browser = webdriver.Chrome(service=service, options=chrome_options)
+            browser_sessions[session_id] = browser
+        except Exception as e:
+            print(f"Error initializing Chrome: {str(e)}")
+            # Fallback to a simpler configuration
+            try:
+                browser = webdriver.Chrome(options=chrome_options)
+                browser_sessions[session_id] = browser
+            except Exception as e2:
+                print(f"Fallback initialization also failed: {str(e2)}")
+                raise
     
     # Update last used time
     session_last_used[session_id] = time.time()
