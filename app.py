@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
@@ -159,6 +159,19 @@ def form_submit():
         return "URL parameter is required", 400
     
     try:
+        # Special handling for Google search
+        if 'google.com/search' in url or 'google.com' in url:
+            # Get the search query
+            if request.method == 'POST':
+                q = request.form.get('q', '')
+            else:
+                q = request.args.get('q', '')
+            
+            if q:
+                # Reconstruct Google search URL
+                search_url = f"https://www.google.com/search?q={q}"
+                return redirect(f"/browse?url={search_url}")
+        
         # Handle both GET and POST form submissions
         if request.method == 'POST':
             # Forward the POST request with its form data
