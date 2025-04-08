@@ -19,6 +19,25 @@ This cloud browser works as a proxy service that:
 3. Renders the transformed content in the user's browser
 4. Provides a simple navigation interface at the top of each page
 
+## Enhanced Version
+
+A more powerful Selenium-based version is also included in this repository:
+
+- **Full Browser Engine**: Uses headless Chrome to render pages server-side
+- **Session Support**: Maintains browser state between requests
+- **JavaScript Support**: Fully executes JavaScript on the server
+- **Complex Applications**: Supports applications like Google Colab and Gmail
+- **Interactive Controls**: Provides click/keyboard interaction with remote pages
+
+The enhanced version requires more resources (standard plan on Render) but provides a much more complete browsing experience.
+
+## Choosing the Right Version
+
+- **Basic Version (app.py)**: Use for simple websites with low resource requirements
+- **Enhanced Version (selenium_app.py)**: Use for complex applications (Colab, Gmail, etc.)
+
+The enhanced version allows you to interact with any website that works in Chrome, including those requiring login, complex JavaScript, and session management.
+
 ## Local Development
 
 ### Prerequisites

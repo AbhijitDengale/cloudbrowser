@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .browser-bar {
+            background-color: #f1f1f1;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+        .browser-button {
+            padding: 5px 10px;
+            margin-right: 5px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .browser-button:hover {
+            background-color: #357ae8;
+        }
+        .url-bar {
+            flex: 1;
+            padding: 8px;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .browser-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .browser-screenshot {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        #keyboard-input {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            display: none;
+        }
+        #virtual-keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .key {
+            margin: 3px;
+            padding: 10px 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .key:hover {
+            background-color: #f9f9f9;
+        }
+        .key.wide {
+            padding: 10px 25px;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            display: none;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4285f4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="browser-bar">
+        <button class="browser-button" onclick="goBack()">Back</button>
+        <button class="browser-button" onclick="refreshPage()">Refresh</button>
+        <input type="text" class="url-bar" id="url-input" value="{{ current_url }}">
+        <button class="browser-button" onclick="navigateToUrl()">Go</button>
+        <button class="browser-button" onclick="toggleKeyboard()">Keyboard</button>
+        <button class="browser-button" onclick="window.location.href='/'">Home</button>
+    </div>
+    
+    <div class="browser-content">
+        <img src="data:image/png;base64,{{ screenshot }}" alt="Browser Content" class="browser-screenshot" id="screenshot">
+        <div id="overlay"></div>
+    </div>
+    
+    <div id="keyboard-input">
+        <div id="virtual-keyboard">
+            <div class="key" onclick="sendKey('1')">1</div>
+            <div class="key" onclick="sendKey('2')">2</div>
+            <div class="key" onclick="sendKey('3')">3</div>
+            <div class="key" onclick="sendKey('4')">4</div>
+            <div class="key" onclick="sendKey('5')">5</div>
+            <div class="key" onclick="sendKey('6')">6</div>
+            <div class="key" onclick="sendKey('7')">7</div>
+            <div class="key" onclick="sendKey('8')">8</div>
+            <div class="key" onclick="sendKey('9')">9</div>
+            <div class="key" onclick="sendKey('0')">0</div>
+            <div class="key wide" onclick="sendKey('Backspace')">&#9003;</div>
+            <br>
+            <div class="key" onclick="sendKey('q')">q</div>
+            <div class="key" onclick="sendKey('w')">w</div>
+            <div class="key" onclick="sendKey('e')">e</div>
+            <div class="key" onclick="sendKey('r')">r</div>
+            <div class="key" onclick="sendKey('t')">t</div>
+            <div class="key" onclick="sendKey('y')">y</div>
+            <div class="key" onclick="sendKey('u')">u</div>
+            <div class="key" onclick="sendKey('i')">i</div>
+            <div class="key" onclick="sendKey('o')">o</div>
+            <div class="key" onclick="sendKey('p')">p</div>
+            <br>
+            <div class="key" onclick="sendKey('a')">a</div>
+            <div class="key" onclick="sendKey('s')">s</div>
+            <div class="key" onclick="sendKey('d')">d</div>
+            <div class="key" onclick="sendKey('f')">f</div>
+            <div class="key" onclick="sendKey('g')">g</div>
+            <div class="key" onclick="sendKey('h')">h</div>
+            <div class="key" onclick="sendKey('j')">j</div>
+            <div class="key" onclick="sendKey('k')">k</div>
+            <div class="key" onclick="sendKey('l')">l</div>
+            <div class="key wide" onclick="sendKey('Enter')">Enter</div>
+            <br>
+            <div class="key" onclick="sendKey('z')">z</div>
+            <div class="key" onclick="sendKey('x')">x</div>
+            <div class="key" onclick="sendKey('c')">c</div>
+            <div class="key" onclick="sendKey('v')">v</div>
+            <div class="key" onclick="sendKey('b')">b</div>
+            <div class="key" onclick="sendKey('n')">n</div>
+            <div class="key" onclick="sendKey('m')">m</div>
+            <div class="key" onclick="sendKey('@')">@</div>
+            <div class="key" onclick="sendKey('.')">.</div>
+            <div class="key wide" onclick="sendKey(' ')">Space</div>
+            <br>
+            <div class="key wide" onclick="toggleKeyboard()">Close Keyboard</div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <script>
+        // Get viewport dimensions to match click coordinates
+        let viewportWidth, viewportHeight;
+        
+        // Get the viewport dimensions when the page loads
+        fetch('/viewport')
+            .then(response => response.json())
+            .then(data => {
+                viewportWidth = data.width;
+                viewportHeight = data.height;
+                
+                // Set up the overlay click handler once we have dimensions
+                setupOverlay();
+            });
+        
+        function setupOverlay() {
+            const overlay = document.getElementById('overlay');
+            const screenshot = document.getElementById('screenshot');
+            
+            overlay.addEventListener('click', function(e) {
+                // Get click position relative to the overlay
+                const rect = overlay.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // Calculate the ratio between screenshot and viewport
+                const scaleX = viewportWidth / overlay.offsetWidth;
+                const scaleY = viewportHeight / overlay.offsetHeight;
+                
+                // Convert click position to viewport coordinates
+                const viewportX = Math.round(clickX * scaleX);
+                const viewportY = Math.round(clickY * scaleY);
+                
+                // Show loading indicator
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                // Send click action to server
+                const formData = new FormData();
+                formData.append('type', 'click');
+                formData.append('x', viewportX);
+                formData.append('y', viewportY);
+                
+                fetch('/action', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        updateBrowserContent(data);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                })
+                .finally(() => {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                });
+            });
+        }
+        
+        function goBack() {
+            window.history.back();
+        }
+        
+        function refreshPage() {
+            // Show loading indicator
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            // Send navigate action with current URL
+            const currentUrl = document.getElementById('url-input').value;
+            const formData = new FormData();
+            formData.append('type', 'navigate');
+            formData.append('url', currentUrl);
+            
+            fetch('/action', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    updateBrowserContent(data);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            })
+            .finally(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            });
+        }
+        
+        function navigateToUrl() {
+            // Show loading indicator
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            // Get URL from input
+            const url = document.getElementById('url-input').value;
+            const formData = new FormData();
+            formData.append('type', 'navigate');
+            formData.append('url', url);
+            
+            fetch('/action', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    updateBrowserContent(data);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            })
+            .finally(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            });
+        }
+        
+        function toggleKeyboard() {
+            const keyboard = document.getElementById('keyboard-input');
+            if (keyboard.style.display === 'block') {
+                keyboard.style.display = 'none';
+            } else {
+                keyboard.style.display = 'block';
+            }
+        }
+        
+        function sendKey(key) {
+            // Show loading indicator
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            const formData = new FormData();
+            formData.append('key', key);
+            
+            fetch('/keyboard', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    updateBrowserContent(data);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            })
+            .finally(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            });
+        }
+        
+        function updateBrowserContent(data) {
+            // Update screenshot
+            document.getElementById('screenshot').src = 'data:image/png;base64,' + data.screenshot;
+            
+            // Update URL bar
+            document.getElementById('url-input').value = data.current_url;
+            
+            // Update page title
+            document.title = data.title;
+        }
+        
+        // Handle Enter key on URL input
+        document.getElementById('url-input').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                navigateToUrl();
+            }
+        });
+    </script>
+</body>
+</html>
